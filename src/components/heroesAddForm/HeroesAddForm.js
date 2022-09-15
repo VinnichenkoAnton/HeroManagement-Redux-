@@ -1,58 +1,112 @@
+import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 
+import { v4 as uuidv4 } from "uuid";
 
-// Задача для этого компонента:
-// Реализовать создание нового героя с введенными данными. Он должен попадать
-// в общее состояние и отображаться в списке + фильтроваться
-// Уникальный идентификатор персонажа можно сгенерировать через uiid
-// Усложненная задача:
-// Персонаж создается и в файле json при помощи метода POST
-// Дополнительно:
-// Элементы <option></option> желательно сформировать на базе
-// данных из фильтров
+import { useHttp } from "../../hooks/http.hook";
+import { heroesFetchingError, heroAdd } from "../../actions";
 
 const HeroesAddForm = () => {
-    return (
-        <form className="border p-4 shadow-lg rounded">
-            <div className="mb-3">
-                <label htmlFor="name" className="form-label fs-4">Имя нового героя</label>
-                <input 
-                    required
-                    type="text" 
-                    name="name" 
-                    className="form-control" 
-                    id="name" 
-                    placeholder="Как меня зовут?"/>
-            </div>
+  const [heroName, setHeroName] = useState("");
+  const [heroDescription, setHeroDescription] = useState("");
+  const [heroElement, setHeroElement] = useState("");
 
-            <div className="mb-3">
-                <label htmlFor="text" className="form-label fs-4">Описание</label>
-                <textarea
-                    required
-                    name="text" 
-                    className="form-control" 
-                    id="text" 
-                    placeholder="Что я умею?"
-                    style={{"height": '130px'}}/>
-            </div>
+  const { request } = useHttp();
 
-            <div className="mb-3">
-                <label htmlFor="element" className="form-label">Выбрать элемент героя</label>
-                <select 
-                    required
-                    className="form-select" 
-                    id="element" 
-                    name="element">
-                    <option >Я владею элементом...</option>
-                    <option value="fire">Огонь</option>
-                    <option value="water">Вода</option>
-                    <option value="wind">Ветер</option>
-                    <option value="earth">Земля</option>
-                </select>
-            </div>
+  const dispatch = useDispatch();
+  const { filters, filtersLoadingStatus } = useSelector((state) => state);
 
-            <button type="submit" className="btn btn-primary">Создать</button>
-        </form>
-    )
-}
+  const submitHandler = (e) => {
+    e.preventDefault();
+    const newHero = {
+      id: uuidv4(),
+      name: heroName,
+      description: heroDescription,
+      element: heroElement,
+    };
+    request(`http://localhost:3001/heroes/`, "POST", JSON.stringify(newHero))
+      .then(dispatch(heroAdd(newHero)))
+      .catch(() => dispatch(heroesFetchingError()));
+    setHeroName("");
+    setHeroDescription("");
+    setHeroElement("");
+  };
+
+  const renderFiltersList = (arr, status) => {
+    if (status === "loading") {
+      return <option value="Загрузка фильтров">Загрузка фильтров</option>;
+    } else if (status === "error") {
+      return <option value="Ошибка загрузки">Ошибка загрузки</option>;
+    }
+
+    if (filters && filters.length > 0) {
+      return arr.map(({ name, label }) => {
+        // eslint-disable-next-line
+        if (name === "all") return;
+        return (
+          <option key={name} value={name}>
+            {label}
+          </option>
+        );
+      });
+    }
+  };
+  return (
+    <form className="border p-4 shadow-lg rounded" onSubmit={submitHandler}>
+      <div className="mb-3">
+        <label htmlFor="name" className="form-label fs-4">
+          Имя нового героя
+        </label>
+        <input
+          value={heroName}
+          required
+          type="text"
+          name="name"
+          className="form-control"
+          id="name"
+          placeholder="Как меня зовут?"
+          onChange={(e) => setHeroName(e.target.value)}
+        />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="text" className="form-label fs-4">
+          Описание
+        </label>
+        <textarea
+          value={heroDescription}
+          required
+          name="text"
+          className="form-control"
+          id="text"
+          placeholder="Что я умею?"
+          style={{ height: "130px" }}
+          onChange={(e) => setHeroDescription(e.target.value)}
+        />
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="element" className="form-label">
+          Выбрать элемент героя
+        </label>
+        <select
+          value={heroElement}
+          required
+          className="form-select"
+          id="element"
+          name="element"
+          onChange={(e) => setHeroElement(e.target.value)}
+        >
+          <option value="">Я владею элементом...</option>
+          {renderFiltersList(filters, filtersLoadingStatus)}
+        </select>
+      </div>
+
+      <button type="submit" className="btn btn-primary">
+        Создать
+      </button>
+    </form>
+  );
+};
 
 export default HeroesAddForm;
