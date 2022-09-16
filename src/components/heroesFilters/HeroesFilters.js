@@ -1,13 +1,10 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import classNames from "classnames";
+import { createSelector } from "@reduxjs/toolkit";
 
-import {
-  filtersFetched,
-  filtersFetchingError,
-  filtersFetching,
-  activeFilterChanged,
-} from "../../actions";
+import { fetchFilters } from "../../actions";
+import { filtersActive } from "../heroesFilters/filtersSlice";
 
 import { useHttp } from "../../hooks/http.hook";
 import Spinner from "../spinner/Spinner";
@@ -15,15 +12,13 @@ import Spinner from "../spinner/Spinner";
 const HeroesFilters = () => {
   const { request } = useHttp();
   const dispatch = useDispatch();
+
   const { filters, filtersLoadingStatus, activeFilter } = useSelector(
-    (state) => state
+    (state) => state.filters
   );
 
   useEffect(() => {
-    dispatch(filtersFetching());
-    request("http://localhost:3001/filters")
-      .then((data) => dispatch(filtersFetched(data)))
-      .catch(() => dispatch(filtersFetchingError()));
+    dispatch(fetchFilters(request));
 
     // eslint-disable-next-line
   }, []);
@@ -42,7 +37,7 @@ const HeroesFilters = () => {
           className={classNames("btn", className, {
             active: name === activeFilter,
           })}
-          onClick={() => dispatch(activeFilterChanged(name))}
+          onClick={() => dispatch(filtersActive(name))}
         >
           {label}
         </button>

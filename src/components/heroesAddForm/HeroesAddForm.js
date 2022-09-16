@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
 
 import { useHttp } from "../../hooks/http.hook";
-import { heroesFetchingError, heroAdd } from "../../actions";
+import { heroAdd } from "../heroesList/heroesSlice";
 
 const HeroesAddForm = () => {
   const [heroName, setHeroName] = useState("");
@@ -14,7 +14,9 @@ const HeroesAddForm = () => {
   const { request } = useHttp();
 
   const dispatch = useDispatch();
-  const { filters, filtersLoadingStatus } = useSelector((state) => state);
+  const { filters, filtersLoadingStatus } = useSelector(
+    (state) => state.filters
+  );
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ const HeroesAddForm = () => {
     };
     request(`http://localhost:3001/heroes/`, "POST", JSON.stringify(newHero))
       .then(dispatch(heroAdd(newHero)))
-      .catch(() => dispatch(heroesFetchingError()));
+      .catch((err) => console.log(err));
     setHeroName("");
     setHeroDescription("");
     setHeroElement("");
